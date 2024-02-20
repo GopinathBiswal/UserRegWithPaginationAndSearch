@@ -11,10 +11,20 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    public User registerUser(User user) {
-        return userRepository.save(user);
-    }
+//    public User registerUser(User user) {
+//        return userRepository.save(user);
+//    }
     
+    public boolean registerUser(User user) {
+        try {
+            userRepository.save(user);
+            return true;
+        } catch (Exception e) {
+            e.getMessage();
+            return false;
+        }
+    }
+   
     public User findByEmail(String email) {
         return userRepository.findByEmail(email);
     }

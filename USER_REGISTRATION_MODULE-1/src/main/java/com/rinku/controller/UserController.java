@@ -3,6 +3,7 @@ package com.rinku.controller;
 import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -11,6 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.rinku.entity.User;
@@ -32,11 +34,22 @@ public class UserController {
         return "register";
     }
 
+//    @PostMapping("/register")
+//    public String registerUser(User user) {
+//        userService.registerUser(user);
+//        return "redirect:/registrationSuccess"; // Redirect to a success page
+//    }
+    
     @PostMapping("/register")
-    public String registerUser(User user) {
-        userService.registerUser(user);
-        return "redirect:/registrationSuccess"; // Redirect to a success page
+    @ResponseBody
+    public ResponseEntity<String> registerUser(User user) {
+        if (userService.registerUser(user)) {
+            return ResponseEntity.ok("success"); 
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("error"); 
+        }
     }
+
 
     @GetMapping("/registrationSuccess")
     public String showRegistrationSuccessPage() {
@@ -49,20 +62,18 @@ public class UserController {
     }
 
     @PostMapping("/generate-otp")
-    public String generateOTP(@RequestParam("email") String email, RedirectAttributes redirectAttributes) {
+    public ResponseEntity<String> generateOTP(@RequestParam("email") String email) {
         // Check if the email is registered
         User user = userService.findByEmail(email);
         if (user != null) {
-            // Generate OTP and send it to the registered email
+            // Generate OTP
             String otp = generateOTP();
             // Send OTP to the email
             sendOTPByEmail(email, otp);
-            redirectAttributes.addFlashAttribute("message", "OTP sent to your registered email address.");
-            redirectAttributes.addFlashAttribute("email", email); // Pass the email to the verifyOTP method
+            return ResponseEntity.ok(otp); // Return OTP value in the response body
         } else {
-            redirectAttributes.addFlashAttribute("error", "Email not found. Please register first.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Email not found. Please register first.");
         }
-        return "redirect:/login";
     }
     
     @PostMapping("/verify-email") // Handle email verification
@@ -90,7 +101,7 @@ public class UserController {
         	MimeMessageHelper helper = new MimeMessageHelper(message);
         	
         	helper.setFrom("1998bgopinath@gmail.com");
-        	helper.setTo("gopinathbiswal1998@gmail.com");
+        	helper.setTo(email);
         	helper.setSubject("Your OTP for registration");
         	helper.setText("Your OTP is: " + otp);
         	
@@ -117,5 +128,19 @@ public class UserController {
         // Dummy implementation: OTP is valid if it's a 6-digit number
         return otp != null && otp.matches("\\d{6}");
     }
+    
+    @PostMapping("/login")
+    public String login(@RequestParam("email") String email, Model model) {
+        // Assuming you have a UserService that retrieves user information
+        User user = userService.findByEmail(email);
+        if (user != null) {
+            model.addAttribute("username", user.getUserName());
+            return "welcome"; // Redirect to the welcome page
+        } else {
+            // Handle invalid login, such as displaying an error message
+            return "login"; // Redirect back to the login page
+        }
+    }
+
     
 } //Class closing

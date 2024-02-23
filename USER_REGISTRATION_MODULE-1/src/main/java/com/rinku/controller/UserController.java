@@ -1,5 +1,6 @@
 package com.rinku.controller;
 
+import java.util.List;
 import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,15 +12,22 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.rinku.entity.User;
+import com.rinku.repo.UserRepository;
 import com.rinku.service.UserService;
 
 import jakarta.mail.internet.MimeMessage;
 
+/**
+ * Controller for crud and OTP operation with mail.
+ * 
+ * @author gopinath.biswal
+ */
 @Controller
 public class UserController {
     @Autowired
@@ -27,6 +35,9 @@ public class UserController {
     
     @Autowired
 	private JavaMailSender javaMailSender;
+    
+    @Autowired
+    private UserRepository userRepository;
     
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
@@ -44,17 +55,24 @@ public class UserController {
     @ResponseBody
     public ResponseEntity<String> registerUser(User user) {
         if (userService.registerUser(user)) {
-            return ResponseEntity.ok("success"); 
+        	String registrationNumber = generateRegistrationNumber(user.getId());
+            user.setRegistrationNo(registrationNumber);
+            userRepository.save(user);
+            return ResponseEntity.ok("success:"+registrationNumber); 
         } else {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("error"); 
         }
     }
-
-
-    @GetMapping("/registrationSuccess")
-    public String showRegistrationSuccessPage() {
-        return "registrationSuccess";
+    
+    private String generateRegistrationNumber(Long userId) {
+        String formattedId = String.format("%05d", userId);
+        return "USERREGNO/" + formattedId;
     }
+
+//    @GetMapping("/registrationSuccess")
+//    public String showRegistrationSuccessPage() {
+//        return "registrationSuccess";
+//    }
     
     @GetMapping("/login")
     public String showLoginPage() {
@@ -141,6 +159,35 @@ public class UserController {
             return "login"; // Redirect back to the login page
         }
     }
-
     
+    @GetMapping("/show-records")
+    public String showRecords(Model model) {
+        List<User> users = userService.getAllUsers();
+        model.addAttribute("users", users);
+        
+        return "showRecords";
+    }
+    
+    @PostMapping("/update")
+    public ResponseEntity<String> updateRecord(@RequestBody User user) {
+    	try {
+            userService.updateUser(user);
+            return ResponseEntity.ok("Record updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body("Failed to update record: " + e.getMessage());
+        }
+    }
+    
+    @PostMapping("/delete")
+    public ResponseEntity<String> deleteRecord(@RequestParam("id") Long id) {
+        try {
+        	userService.deleteUserById(id);
+            return ResponseEntity.ok("Record deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body("Failed to delete record: " + e.getMessage());
+        }
+    }
+
 } //Class closing

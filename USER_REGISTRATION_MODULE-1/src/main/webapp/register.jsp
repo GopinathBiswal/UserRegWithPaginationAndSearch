@@ -74,7 +74,23 @@
     flex: 1;
     margin-right: 5px;
 }
-        
+       #loginButton {
+        background-color: #4CAF50; /* Green background */
+        color: white; /* White text */
+        padding: 15px 25px; /* Larger padding for bigger button */
+        border-radius: 10px; /* Rounded corners */
+        font-size: 16px; /* Larger font size */
+        border: none; /* No border */
+        cursor: pointer; /* Cursor pointer */
+        transition: background-color 0.3s, box-shadow 0.3s; /* Smooth transition for background-color and box-shadow */
+        box-shadow: 0px 5px 10px rgba(0, 128, 0, 0.3); /* Light shadow */
+    }
+
+    /* Hover effect */
+    #loginButton:hover {
+        background-color: #388e3c; /* Darker green on hover */
+        box-shadow: 0px 8px 15px rgba(0, 128, 0, 0.6); /* Deeper shadow on hover */
+    } 
     </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
@@ -85,62 +101,62 @@
         var email = document.getElementById('email').value.trim();
 
         if (userName === '') {
-            //alert('Please enter a user name.');
-            Swal.fire({
+            alert('Please enter a user name.');
+            /* Swal.fire({
                 icon: 'error',
                 title: 'Validation Error',
                 text: 'Please enter a user name.'
-            });
+            }); */
             return false;
         }
 
         if (mobileNumber === '') {
-            //alert('Please enter a mobile number.');
-            Swal.fire({
+            alert('Please enter a mobile number.');
+            /* Swal.fire({
                 icon: 'error',
                 title: 'Validation Error',
                 text: 'Please enter a mobile number.'
-            });
+            }); */
             return false;
         }
 
         if (!/^[6-9]\d*$/.test(mobileNumber)) {
-            //alert('Please enter a valid mobile number starting with 6, 7, 8, or 9.');
-            Swal.fire({
+            alert('Please enter a valid mobile number starting with 6, 7, 8, or 9.');
+            /* Swal.fire({
                 icon: 'error',
                 title: 'Validation Error',
                 text: 'Please enter a valid mobile number starting with 6, 7, 8, or 9.'
-            });
+            }); */
             return false;
         }
         
         if (mobileNumber.length !== 10) {
-            //alert('Mobile number must have 10 digits.');
-            Swal.fire({
+            alert('Mobile number must have 10 digits.');
+            /* Swal.fire({
                 icon: 'error',
                 title: 'Validation Error',
                 text: 'Mobile number must have 10 digits.'
-            });
+            }); */
             return false;
         }
 
         if (email === '') {
-            //alert('Please enter an email address.');
-            Swal.fire({
+            alert('Please enter an email address.');
+            /* Swal.fire({
                 icon: 'error',
                 title: 'Validation Error',
                 text: 'Please enter an email address.'
-            });
+            }); */
             return false;
         }
 
         if (!/\S+@\S+\.\S+/.test(email)) {
-            //alert('Please enter a valid email address.');
-            Swal.fire({
+            alert('Please enter a valid email address.');
+            /* Swal.fire({
                 icon: 'error',
                 title: 'Validation Error',
                 text: 'Please enter a valid email address.'
-            });
+            }); */
             return false;
         }
 
@@ -187,15 +203,20 @@
 		    registerXhr.onreadystatechange = function () {
 		        if (registerXhr.readyState === 4) {
 		            if (registerXhr.status === 200) {
-		                if (registerXhr.responseText === 'success') {
+		            	var response = registerXhr.responseText;
+		                if (response.startsWith('success:')) {
+		                    // Extract registration number from the response
+		                    var registrationNumber = response.substring(8);
 		                    Swal.fire({
 		                        icon: 'success',
 		                        title: 'Registration Successful!',
-		                        text: 'User successfully registered.',
+		                        text: 'User successfully registered with registration number: ' + registrationNumber,
 		                        showConfirmButton: false,
-		                        timer: 3500
-		                    }).then(() => {
-		                    	window.location.href = '/login';
+		                        footer: '<button id="loginButton" class="btn btn-primary">Login</button>',
+		                    });
+
+		                    document.getElementById('loginButton').addEventListener('click', function() {
+		                        window.location.href = '/login';
 		                    });
 		                } else {
 		                    Swal.fire({
@@ -225,11 +246,11 @@
         <h2>User Registration</h2>
         <form id="registrationForm" action="/register" method="post" onsubmit="return validateForm()">
         	<label for="userName">User Name:</label>
-            <input type="text" id="userName" name="userName">
+            <input type="text" id="userName" name="userName" title="User Name" placeholder="e.g: Jack07">
             <label for="mobileNumber">Mobile Number:</label>
-            <input type="text" id="mobileNumber" name="mobileNumber">
+            <input type="text" id="mobileNumber" name="mobileNumber" title="Mobile Number" placeholder="e.g: 9178243689">
             <label for="email">Email:</label>
-            <input type="email" id="email" name="email">
+            <input type="email" id="email" name="email" title="Email Id" placeholder="e.g: jacksmith1907@gmail.com">
             <div class="button-container">
 		        <input type="submit" value="Register">
 		        <input type="reset" value="Reset" class="reset-button">

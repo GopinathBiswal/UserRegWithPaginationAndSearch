@@ -6,6 +6,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.Data;
 
+/**
+ * Entity class that has mapped with user table in MySQL db.
+ * 
+ * @author gopinath.biswal
+ */
 @Entity
 @Data
 public class User {
@@ -15,5 +20,5 @@ public class User {
     private String email;
     private String mobileNumber;
     private String userName;
-
+    private String registrationNo;
 }

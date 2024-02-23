@@ -110,7 +110,7 @@ input[disabled] {
     </style>
 </head>
 <body>
-    <h2>Login</h2>
+    <h2>User Login</h2>
     <form id="loginForm" action="/login" method="post">
         <div class="email-section">
             <label for="email">Email:</label>

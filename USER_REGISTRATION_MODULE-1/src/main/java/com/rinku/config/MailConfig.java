@@ -7,6 +7,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
+/**
+ * Setting own mail and it's app password for SMTP mail configuration.
+ * 
+ * @author gopinath.biswal
+ */
 @Configuration
 public class MailConfig {
 

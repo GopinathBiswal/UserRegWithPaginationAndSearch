@@ -1,7 +1,16 @@
 package com.rinku.controller;
  
+import java.nio.charset.StandardCharsets;
+import java.security.DigestException;
+import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Random;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -54,14 +63,34 @@ public class UserController {
     @PostMapping("/register")
     @ResponseBody
     public ResponseEntity<String> registerUser(User user) {
-        if (userService.registerUser(user)) {
-        	String registrationNumber = generateRegistrationNumber(user.getId());
-            user.setRegistrationNo(registrationNumber);
-            userRepository.save(user);
-            return ResponseEntity.ok("success:"+registrationNumber); 
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("error"); 
-        }
+    	
+    	try {
+    		if(user.getUserName()!=null && !user.getUserName().isEmpty()) {
+				String encryptText=decryptPassword(user.getUserName());
+				String decryptText = getDecryptText(encryptText);
+				user.setUserName(decryptText);
+			}
+			if(user.getMobileNumber()!=null && !user.getMobileNumber().isEmpty()) {
+				String encryptText=decryptPassword(user.getMobileNumber());
+				String decryptText = getDecryptText(encryptText);
+				user.setMobileNumber(decryptText);
+			}
+			if(user.getEmail()!=null && !user.getEmail().isEmpty()) {
+				String encryptText=decryptPassword(user.getEmail());
+				String decryptText = getDecryptText(encryptText);
+				user.setEmail(decryptText);
+			}
+    		
+    		if (userService.registerUser(user)) {
+            	String registrationNumber = generateRegistrationNumber(user.getId());
+                user.setRegistrationNo(registrationNumber);
+                userRepository.save(user);
+                return ResponseEntity.ok("success:"+registrationNumber); 
+            }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("error"); 
     }
     
     private String generateRegistrationNumber(Long userId) {
@@ -189,5 +218,82 @@ public class UserController {
                                  .body("Failed to delete record: " + e.getMessage());
         }
     }
+    
+    private String getDecryptText(String cipherText) {
+		String secret = "f8e0c592d34ecd5bda95bc21cebc15ac";
+		String decryptedText =null;
+		try {
+			byte[] cipherData = Base64.getDecoder().decode(cipherText);
+			
+			byte[] saltData = Arrays.copyOfRange(cipherData, 8, 16);
+	 
+			MessageDigest md5 = MessageDigest.getInstance("MD5");
+			final byte[][] keyAndIV = GenerateKeyAndIV(32, 16, 1, saltData, secret.getBytes(StandardCharsets.UTF_8), md5);
+			SecretKeySpec key = new SecretKeySpec(keyAndIV[0], "AES");
+			IvParameterSpec iv = new IvParameterSpec(keyAndIV[1]);
+	 
+			byte[] encryptedData = Arrays.copyOfRange(cipherData, 16, cipherData.length);
+			Cipher aesCBC = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			aesCBC.init(Cipher.DECRYPT_MODE, key, iv);
+			byte[] decryptedData = aesCBC.doFinal(encryptedData);
+			decryptedText = new String(decryptedData, StandardCharsets.UTF_8);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return decryptedText;
+	}
+	
+	private String decryptPassword(String encryptedPass) {
+		if (encryptedPass != null && !encryptedPass.isEmpty()) {
+	        encryptedPass = encryptedPass.substring(5, encryptedPass.length() - 5);
+	        return new String(Base64.getDecoder().decode(encryptedPass));
+	    } else
+	        return encryptedPass;
+	}
+	 
+	public static byte[][] GenerateKeyAndIV(int keyLength, int ivLength, int iterations, byte[] salt, byte[] password, MessageDigest md) {
+		
+		Integer digestLength = md.getDigestLength();
+		Integer requiredLength = (keyLength + ivLength + digestLength - 1) / digestLength * digestLength;
+		byte[] generatedData = new byte[requiredLength];
+		int generatedLength = 0;
+	 
+		try {
+	       md.reset();
+	       // Repeat process until sufficient data has been generated
+	       while (generatedLength < keyLength + ivLength) {
+	           // Digest data (last digest if available, password data, salt if available)
+	           if (generatedLength > 0)
+	               md.update(generatedData, generatedLength - digestLength, digestLength);
+	           md.update(password);
+	           if (salt != null)
+	               md.update(salt, 0, 8);
+	           md.digest(generatedData, generatedLength, digestLength);
+	 
+	           // additional rounds
+	           for (Integer i = 1; i < iterations; i++) {
+	               md.update(generatedData, generatedLength, digestLength);
+	               md.digest(generatedData, generatedLength, digestLength);
+	           }
+	           generatedLength += digestLength;
+	       }
+	 
+	       // Copy key and IV into separate byte arrays
+	       byte[][] result = new byte[2][];
+	       result[0] = Arrays.copyOfRange(generatedData, 0, keyLength);
+	       if (ivLength > 0)
+	           result[1] = Arrays.copyOfRange(generatedData, keyLength, keyLength + ivLength);
+	 
+	       return result;
+	 
+	   } catch (DigestException e) {
+	       throw new RuntimeException(e);
+	 
+	   } finally {
+	       // Clean out temporary data
+	       Arrays.fill(generatedData, (byte)0);
+	   }
+	}
 
 } //Class closing

@@ -94,12 +94,71 @@
     </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript">
+	function onEncrypt(normalPass) {
+	    if (normalPass) {
+	        return makeRandom() + btoa(normalPass) + makeRandom();
+	    } else {
+	        return normalPass;
+	    }
+	}
+	 
+	function onDecrypt(normalPass) {
+	    if (normalPass) {
+	        normalPass = normalPass.substring(5, normalPass.length - 5);
+	        return atob(normalPass);
+	    } else {
+	        return normalPass;
+	    }
+	}
+	 
+	function makeRandom() {
+	    var text = "";
+	    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	 
+	    for (var i = 0; i < 5; i++) {
+	        text += possible.charAt(Math.floor(Math.random() * possible.length));
+	    }
+	    return text;
+	}
+</script>
 <script>
+	function encryptDatas() {
+		debugger;
+		var secret = "f8e0c592d34ecd5bda95bc21cebc15ac";
+
+        var username = $("#userName").val();
+        if (username != ""){
+       		var encrypted = CryptoJS.AES.encrypt(username, secret);
+       		encrypted = encrypted.toString();
+       		var encrypted1 = onEncrypt(encrypted);
+        }
+        $("#userName").val(encrypted1);
+        
+        var mobileNo = $("#mobileNumber").val();
+        if (mobileNo != ""){
+    		var encrypted = CryptoJS.AES.encrypt(mobileNo, secret);
+    		encrypted = encrypted.toString();
+    		var encrypted2 = onEncrypt(encrypted);
+    	}
+  		$("#mobileNumber").val(encrypted2);
+        
+        var eMail = $("#email").val();
+        if (eMail != ""){
+     		var encrypted = CryptoJS.AES.encrypt(eMail, secret);
+     		encrypted = encrypted.toString();
+     		var encrypted3 = onEncrypt(encrypted);
+     	}
+        $("#email").val(encrypted3);
+	}
+
     function validateForm() {
         var userName = document.getElementById('userName').value.trim();
         var mobileNumber = document.getElementById('mobileNumber').value.trim();
         var email = document.getElementById('email').value.trim();
-
+        
         if (userName === '') {
             alert('Please enter a user name.');
             /* Swal.fire({
@@ -159,6 +218,8 @@
             }); */
             return false;
         }
+        
+        
 
      	// Make AJAX request to verify email
         var xhr = new XMLHttpRequest();
@@ -188,6 +249,7 @@
                         confirmButtonText: 'Submit'
                     }).then((result) => {
                         if (result.isConfirmed) {
+                        	encryptDatas();
                             submitRegistrationForm();
                         }
                     });
@@ -234,7 +296,14 @@
 		            }
 		        }
 		    };
-		    registerXhr.send("userName=" + encodeURIComponent(userName) + "&mobileNumber=" + encodeURIComponent(mobileNumber) + "&email=" + encodeURIComponent(email));
+		    
+		 	// Get encrypted values
+		    var encryptedUserName = $("#userName").val();
+		    var encryptedMobileNumber = $("#mobileNumber").val();
+		    var encryptedEmail = $("#email").val();
+
+		    // Send encrypted data to backend
+		    registerXhr.send("userName=" + encodeURIComponent(encryptedUserName) + "&mobileNumber=" + encodeURIComponent(encryptedMobileNumber) + "&email=" + encodeURIComponent(encryptedEmail));
 		}
         
         // Prevent default form submission
